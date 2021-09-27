@@ -1,0 +1,86 @@
+<div class="container">
+	<div class="d-flex align-items-center flex-column" style="margin-top:40px;">
+		
+		<div class="top-items d-flex align-items-center flex-column">
+			<%= link_to( image_tag('twitch_logo.svg', class: "mb-4", style: "width:200px; height:100px;"), root_path) %>
+
+			<!-- Titre -->
+			<h4 class="">Liste les opés de ton streamer préféré</h4>
+			
+			<!-- Lien pour lister tous les streamers ou uniquement les vendus -->
+			<form action="/opes" method="get" class="d-flex mb-4">
+				<% if params[:liste] == "tous" || params[:liste].nil? %>
+					<input type='hidden' name='streamer' value='<%= @streamer.username if !@streamer.nil? %>' class='m-1'>
+					<input type="hidden" name="liste" value="vendus">
+		  			Choisis un streamer dans la liste (<button type="submit" style="background: transparent; border: 0px; padding:0px; display: contents;" class="link-primary mb-4">Lister les vendus uniquement</button>)
+		  		<% else %>
+		  			<input type='hidden' name='streamer' value='<%= @streamer.username if !@streamer.nil? %>' class='m-1'>
+		  			<input type="hidden" name="liste" value="tous"> 
+		  			Choisis un vendu dans la liste (<button type="submit" style="background: transparent; border: 0px; padding: 0px; display: contents;" class="link-primary mb-4">Lister tous les streamers</button>)
+		  		<% end %>			
+			</form>
+
+			<!-- Listing de tous les streamers dans un select -->
+			<div class="form-group mb-4">
+				<form action="/opes" method="get" class="d-flex">
+					<% if params[:liste] == "vendus" %>
+						<input type="hidden" name="liste" value="vendus"> 
+					<% end %>
+					<% if params[:liste] == "tous" %>
+						<input type="hidden" name="liste" value="tous"> 
+					<% end %>
+
+					<% if @streamer.nil? %>
+						<input type="text" list="streamers" placeholder="Exemple: squeezie" name="streamer" class="m-1" style="text-transform: lowercase">
+					<% else %>
+						<input type="text" list="streamers" placeholder="<%= @streamer.username %>" name="streamer" class="m-1" style="text-transform: lowercase;">
+					<% end %>
+
+					<datalist id="streamers">
+						<% @streamers.each do |streamer| %>
+					  		<% if params[:liste] == "vendus" %>
+					  			<option id="streamers-vendus"><%= streamer.username if streamer.opes_number > 0 %></option>
+					  		<% elsif params[:liste] == "tous" || params[:liste].nil?  %>
+					  			<option id="all-streamers"><%= streamer.username if streamer.opes_number %></option>
+					  		<% end %>
+					  	<% end %>
+					</datalist>
+					<input type="submit" value="Valider" class="btn btn-primary m-1">
+				</form>
+			</div>
+		</div>
+
+		<!-- Résultat de la requête -->
+		<% if !@streamer.nil?  %>
+			<div class="bottom-items d-flex align-items-center flex-column card bg-light mb-4" style="padding:30px; margin-top:30px;">
+				<% if !@streamer.profile_pic.empty? %>
+					<img src="<%= @streamer.profile_pic %>" class="mb-2	" style="border-radius:50%; height:100px; width: 100px;">
+				<% end %>
+				<h1 class="mb-4"><%= params[:streamer].capitalize if !params[:streamer].nil? %></h1>
+				<h5 class="mb-4"><%= "Ce streamer n'a pas vendu son 🍑 lors de ses #{@streamer.videos_number} derniers streams." if @streamer.videos_list == "" %></h5>
+				<% if @streamer.all_videos_list.empty? %>
+					<p class="mt-3 text-secondary" style="font-size:13px;">Ce streamer n'a aucune vidéo de ses streams uploadée sur twitch. Ce qui nous empêche de vérifier. 😭</p>
+				<% end %>
+				<% if @streamer.videos_list != "" %>
+					<h5>Ce streamer a vendu <span style="color:#e9732f; font-weight:bold;"><%= @streamer.opes_number.to_s %> fois</span> son 🍑 (lors de ses <%= @streamer.videos_number %> derniers streams)</h5>
+				<% end %>
+				<% if @streamer.all_videos_list.split("/;/").count.between?(1,20) %>
+					<p class="mt-3 text-secondary" style="font-size:13px;">Il est fort probable que le streamer archive automatiquement ses vidéos, nous avons donc peu de données.</p>
+				<% end %>
+				<% if !@streamer.videos_list.empty? %>
+					<ul style="padding-left: 0px;">
+						<% @streamer.videos_list.split(";/;").each do |video_title| %>
+							<div class="mt-3 text-secondary" style="font-size:13px; text-align:center"><%= video_title.split("/;/").last.to_date.strftime("%B %d, %Y") %></div>
+							<div style="text-align:center;"><%= video_title.split("/;/").first %></div>
+							<hr>
+						<% end %>
+					</ul>
+					<p class="mt-3 text-secondary" style="font-size:13px;">Dernier stream scanné datant du : <%= @streamer.all_videos_list.split(";/;").first.split("/;/")[1].to_date.strftime("%B %d, %Y") %>
+					<br>Premier stream scanné datant du : <%= @streamer.all_videos_list.split(";/;").last.split("/;/")[1].to_date.strftime("%B %d, %Y") %></p>
+				<% end %>
+		<% elsif !params[:streamer].nil? && !params[:streamer].empty? %>
+				Le streamer "<%= params['streamer'] %>" n'existe pas dans notre base.
+			</div>
+		<% end %>
+	</div>
+</div>
